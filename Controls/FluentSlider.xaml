@@ -144,10 +144,14 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="18" />
                                 </Grid.RowDefinitions>
-                                <Canvas Grid.Row="1" Grid.ColumnSpan="3">
-                                    <Rectangle x:Name="HorizontalTrackRect1" Fill="{TemplateBinding Background}" Height="{ThemeResource SliderTrackThemeHeight}"></Rectangle>
-                                    <Rectangle x:Name="HorizontalTrackRect2" Fill="{TemplateBinding Background}" Height="{ThemeResource SliderTrackThemeHeight}"></Rectangle>
-                                </Canvas>
+                                <Rectangle x:Name="HorizontalTrackRect1" 
+                                           Fill="{TemplateBinding Background}" 
+                                           Height="{ThemeResource SliderTrackThemeHeight}"
+                                            Grid.Row="1" Grid.ColumnSpan="3" />
+                                <Rectangle x:Name="HorizontalTrackRect2" 
+                                           Fill="{TemplateBinding Background}" 
+                                           Height="{ThemeResource SliderTrackThemeHeight}"
+                                            Grid.Row="1" Grid.ColumnSpan="3" />
                                 <Rectangle x:Name="HorizontalTrackRect"
                                     Fill="{TemplateBinding Background}"
                                     Height="{ThemeResource SliderTrackThemeHeight}"

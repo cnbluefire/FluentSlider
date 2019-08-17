@@ -31,9 +31,9 @@ namespace FluentSlider.Controls
 
         Rectangle HorizontalTrackRect1;
         Rectangle HorizontalTrackRect2;
-        Rectangle HorizontalDecreaseRect;
         Grid HorizontalTemplate;
         Thumb HorizontalThumb;
+        Canvas CurveHost;
 
 
         protected override void OnApplyTemplate()
@@ -42,14 +42,9 @@ namespace FluentSlider.Controls
 
             HorizontalTrackRect1 = GetTemplateChild(nameof(HorizontalTrackRect1)) as Rectangle;
             HorizontalTrackRect2 = GetTemplateChild(nameof(HorizontalTrackRect2)) as Rectangle;
-            HorizontalDecreaseRect = GetTemplateChild(nameof(HorizontalDecreaseRect)) as Rectangle;
             HorizontalTemplate = GetTemplateChild(nameof(HorizontalTemplate)) as Grid;
             HorizontalThumb = GetTemplateChild(nameof(HorizontalThumb)) as Thumb;
-
-            if (HorizontalDecreaseRect != null)
-            {
-                HorizontalDecreaseRect.SizeChanged += HorizontalDecreaseRect_SizeChanged;
-            }
+            CurveHost = GetTemplateChild(nameof(CurveHost)) as Canvas;
 
             if (HorizontalTemplate != null)
             {
@@ -57,8 +52,66 @@ namespace FluentSlider.Controls
                 visual.Clip = visual.Compositor.CreateInsetClip(0, -20, 0, 0);
             }
 
+            CreateThumbAnimation();
+            CreateTrackRectAnimation();
+
+            orientationEventToken = RegisterPropertyChangedCallback(OrientationProperty, OrientationChanged);
+            this.Unloaded += FluentSlider_Unloaded;
+
+            this.AddHandler(PointerPressedEvent, new PointerEventHandler(FluentSlider_PointerPressed), true);
+            this.AddHandler(PointerReleasedEvent, new PointerEventHandler(FluentSlider_PointerReleased), true);
+            this.AddHandler(PointerCanceledEvent, new PointerEventHandler(FluentSlider_PointerCanceled), true);
+        }
+
+        #region Composition
+
+        private void CreateTrackRectAnimation()
+        {
+            if (HorizontalThumb != null && HorizontalTrackRect1 != null && HorizontalTrackRect2 != null)
+            {
+                var visual1 = ElementCompositionPreview.GetElementVisual(HorizontalTrackRect1);
+                var visual2 = ElementCompositionPreview.GetElementVisual(HorizontalTrackRect2);
+
+                var clip1 = Window.Current.Compositor.CreateInsetClip();
+                var clip2 = Window.Current.Compositor.CreateInsetClip();
+
+                visual1.Clip = clip1;
+                visual2.Clip = clip2;
+
+                var thumbOffsetXExp = "thumb.Offset.X";
+                var thisSizeXExp = "host.Size.X";
+                var right1 = Window.Current.Compositor.CreateExpressionAnimation($"{thisSizeXExp} - {thumbOffsetXExp} + 37");
+                var left2 = Window.Current.Compositor.CreateExpressionAnimation($"{thumbOffsetXExp} + 53");
+
+                right1.SetReferenceParameter("thumb", ElementCompositionPreview.GetElementVisual(HorizontalThumb));
+                right1.SetReferenceParameter("host", visual1);
+                left2.SetReferenceParameter("thumb", ElementCompositionPreview.GetElementVisual(HorizontalThumb));
+                left2.SetReferenceParameter("host", visual2);
+
+                clip1.StartAnimation("RightInset", right1);
+                clip2.StartAnimation("LeftInset", left2);
+            }
+        }
+
+        private void CreateThumbAnimation()
+        {
             if (HorizontalThumb != null)
             {
+                var imp = Window.Current.Compositor.CreateImplicitAnimationCollection();
+                var offsetAnimation = Window.Current.Compositor.CreateVector3KeyFrameAnimation();
+                offsetAnimation.InsertExpressionKeyFrame(0f, "(abs(this.FinalValue.X - this.StartingValue.X) > 80) ? this.StartingValue : this.FinalValue");
+                offsetAnimation.InsertExpressionKeyFrame(1f, "this.FinalValue");
+                offsetAnimation.Duration = TimeSpan.FromSeconds(0.1d);
+                offsetAnimation.Target = "Offset";
+                imp["Offset"] = offsetAnimation;
+                ElementCompositionPreview.GetElementVisual(HorizontalThumb).ImplicitAnimations = imp;
+
+                if (CurveHost != null)
+                {
+                    ElementCompositionPreview.GetElementVisual(CurveHost).ImplicitAnimations = imp;
+                }
+
+
                 horizontalThumbContent = VisualTreeHelper.GetChild(HorizontalThumb, 0) as Ellipse;
 
                 if (horizontalThumbContent == null)
@@ -95,21 +148,12 @@ namespace FluentSlider.Controls
                     releasedThumbAnimation.FinalValue = 0f;
                 }
             }
-
-            orientationEventToken = RegisterPropertyChangedCallback(OrientationProperty, OrientationChanged);
-            this.Unloaded += FluentSlider_Unloaded;
-
-            this.AddHandler(PointerPressedEvent, new PointerEventHandler(FluentSlider_PointerPressed), true);
-            this.AddHandler(PointerReleasedEvent, new PointerEventHandler(FluentSlider_PointerReleased), true);
-            this.AddHandler(PointerCanceledEvent, new PointerEventHandler(FluentSlider_PointerCanceled), true);
         }
 
+        #endregion Composition
 
-        private void OrientationChanged(DependencyObject sender, DependencyProperty dp)
-        {
-            if (Orientation == Orientation.Vertical)
-                throw new NotSupportedException();
-        }
+
+        #region Event Callbacks
 
         private void FluentSlider_Unloaded(object sender, RoutedEventArgs e)
         {
@@ -122,19 +166,10 @@ namespace FluentSlider.Controls
             this.RemoveHandler(PointerCanceledEvent, new PointerEventHandler(FluentSlider_PointerCanceled));
         }
 
-        private void HorizontalDecreaseRect_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void OrientationChanged(DependencyObject sender, DependencyProperty dp)
         {
-            if (HorizontalTrackRect1 != null && HorizontalTrackRect2 != null)
-            {
-                var width = HorizontalTemplate.ActualWidth;
-                var width1 = HorizontalDecreaseRect.ActualWidth - 37;
-                var left2 = HorizontalDecreaseRect.ActualWidth + 53;
-                var width2 = width - left2;
-
-                Canvas.SetLeft(HorizontalTrackRect2, left2);
-                HorizontalTrackRect1.Width = Math.Max(0, width1);
-                HorizontalTrackRect2.Width = Math.Max(0, width2);
-            }
+            if (Orientation == Orientation.Vertical)
+                throw new NotSupportedException();
         }
 
         private void FluentSlider_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -160,5 +195,8 @@ namespace FluentSlider.Controls
                 ElementCompositionPreview.GetElementVisual(horizontalThumbContent).StartAnimation("Translation.Y", releasedThumbAnimation);
             }
         }
+
+        #endregion Event Callbacks
+
     }
 }
