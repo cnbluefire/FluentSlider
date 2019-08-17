@@ -97,20 +97,20 @@ namespace FluentSlider.Controls
         {
             if (HorizontalThumb != null)
             {
-                var imp = Window.Current.Compositor.CreateImplicitAnimationCollection();
-                var offsetAnimation = Window.Current.Compositor.CreateVector3KeyFrameAnimation();
-                offsetAnimation.InsertExpressionKeyFrame(0f, "(abs(this.FinalValue.X - this.StartingValue.X) > 80) ? this.StartingValue : this.FinalValue");
-                offsetAnimation.InsertExpressionKeyFrame(1f, "this.FinalValue");
-                offsetAnimation.Duration = TimeSpan.FromSeconds(0.1d);
-                offsetAnimation.Target = "Offset";
-                imp["Offset"] = offsetAnimation;
-                ElementCompositionPreview.GetElementVisual(HorizontalThumb).ImplicitAnimations = imp;
+                // // 平移动画 由于动画是上推Thumb操作带动Track弯曲，正确的行为是Thumb始终跟手，所以移除了平移动画
+                //var imp = Window.Current.Compositor.CreateImplicitAnimationCollection();
+                //var offsetAnimation = Window.Current.Compositor.CreateVector3KeyFrameAnimation();
+                //offsetAnimation.InsertExpressionKeyFrame(0f, "(abs(this.FinalValue.X - this.StartingValue.X) > 80) ? this.StartingValue : this.FinalValue");
+                //offsetAnimation.InsertExpressionKeyFrame(1f, "this.FinalValue");
+                //offsetAnimation.Duration = TimeSpan.FromSeconds(0.1d);
+                //offsetAnimation.Target = "Offset";
+                //imp["Offset"] = offsetAnimation;
+                //ElementCompositionPreview.GetElementVisual(HorizontalThumb).ImplicitAnimations = imp;
 
-                if (CurveHost != null)
-                {
-                    ElementCompositionPreview.GetElementVisual(CurveHost).ImplicitAnimations = imp;
-                }
-
+                //if (CurveHost != null)
+                //{
+                //    ElementCompositionPreview.GetElementVisual(CurveHost).ImplicitAnimations = imp;
+                //}
 
                 horizontalThumbContent = VisualTreeHelper.GetChild(HorizontalThumb, 0) as Ellipse;
 
